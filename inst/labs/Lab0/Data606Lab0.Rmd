@@ -1,0 +1,122 @@
+---
+title: 'Data 606: Lab  0'
+author: "Stephanie Roark"
+date: "9/2/2018"
+output:
+  html_document:
+    css: ./lab.css
+    highlight: pygments
+    theme: cosmo
+  pdf_document: default
+---
+#Comparing Arbutnot's Baptisms to Present Day Births
+
+##Arbuthnot's Baptism Data
+The Arbuthnot data set refers to Dr. John Arbuthnot, an 18<sup>th</sup> century 
+physician, writer, and mathematician.  He was interested in the ratio of newborn
+boys to newborn girls, so he gathered the baptism records for children born in
+London for every year from 1629 to 1710.
+
+A summary of Arbuthnot's baptism data set for girls and boys:
+
+```{r view-data, eval=TRUE}
+source("more/arbuthnot.R")
+head(arbuthnot)
+dim(arbuthnot)
+names(arbuthnot)
+```
+
+
+#Present Day Birth Records in the US
+
+The Present data set contains trend analysis of the sex ratios at birth in the US from 19049 to 2002.
+
+##Question 1:
+##What are the dimensions of the data frame and what are the variable or column names?
+
+The present data set contains 63 rows and 3 columns which are named year, boys, and girls.
+
+```{r view present data , eval=TRUE}
+source("more/present.R")
+head(present)
+dim(present)
+names(present)
+```
+
+##What years are included in this data set?
+
+The  birth data ranges from 1940 to 2002.
+
+```{r max and min of year, eval=TRUE}
+min(present$year)
+
+max(present$year)
+```
+
+##Question 2: How do these counts compare to Arbuthnot’s? 
+
+##Total number of baptisms per year 
+
+The total number of baptisms for boys and girls for the period from 1629 to 1710.
+
+```{r plot total baptisms, eval=TRUE}
+plot(arbuthnot$year, arbuthnot$boys + arbuthnot$girls, type = "l")
+```
+
+##Total number of births per year 
+
+The total number of births for boys and girls for the period from 1940 to 2002.
+
+
+```{r plot total birth per year, eval=TRUE}
+plot(present$year, present$boys + present$girls, type = "l")
+```
+
+##Are they on a similar scale?
+###Scale for Baptism data
+```{r max & min for baptisms, eval=TRUE}
+min(arbuthnot$boys + arbuthnot$girls)
+max(arbuthnot$boys + arbuthnot$girls)
+```
+
+###Scale for modern US birth data
+```{r max and min for births, eval=TRUE}
+min(present$boys + present$girls)
+max(present$boys + present$girls)
+```
+
+###Ratio of min and max births to baptisms 
+The scale of present day births is several hundred times the scale of baptisms.
+```{r comparing max and mins, eval=TRUE}
+min(present$boys + present$girls)/min(arbuthnot$boys + arbuthnot$girls)
+max(present$boys + present$girls)/max(arbuthnot$boys + arbuthnot$girls)
+```
+
+##Question 3: Make a plot that displays the boy-to-girl ratio for every year in the data set. What do you see?
+
+Early on the number of boys born is higher than girls, but as the years progress the proportion of boys to girls gets closer to being equal. 
+
+
+###Plot of ratio of boy to girl ratio
+```{r plot present ration of boys to girls, eval=TRUE}
+plot(present$year, present$boys/present$girls, type = "l")
+```
+
+###Proportion of boys to girls
+
+There are more boys born than girls during the entire period of the data set, but the proportion of boys gets smaller over time.
+
+```{r proportion of boys to girls, eval=TRUE}
+
+present$boys/(present$boys + present$girls)
+plot(present$year, present$boys/(present$boys + present$girls), type = "l")
+```
+
+##Question 4: In what year did we see the most total number of births in the U.S.?
+
+The year with the greatest number of total births is 1961. 
+
+```{r year with most births, eval=TRUE}
+present$totalBirths = present$boys + present$girls
+present[ present$totalBirths == max(present$totalBirths), ]
+```
