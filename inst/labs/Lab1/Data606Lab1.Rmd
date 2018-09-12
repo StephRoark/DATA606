@@ -1,0 +1,219 @@
+---
+title: "Data 606 Lab1"
+author: "Stephanie Roark"
+date: "9/9/2018"
+output:
+ html_document:
+    theme: cosmo
+    highlight: pygments
+---
+
+## Intro to Data
+
+## Getting started
+
+The Behavioral Risk Factor Surveillance System (BRFSS) is an annual telephone 
+survey of 350,000 people in the United States. As its name implies, the BRFSS 
+is designed to identify risk factors in the adult population and report 
+emerging health trends. For example, respondents are asked about their diet and 
+weekly physical activity, their HIV/AIDS status, possible tobacco use, and even
+their level of healthcare coverage. The BRFSS Web site 
+([http://www.cdc.gov/brfss](http://www.cdc.gov/brfss)) contains a complete 
+description of the survey, including the research questions that motivate the 
+study and many interesting results derived from the data.
+
+We will focus on a random sample of 20,000 people from the BRFSS survey 
+conducted in 2000. While there are over 200  variables in this data set, we will
+work with a small subset.
+
+We begin by loading the data set of 20,000 observations into the R workspace. 
+After launching RStudio, enter the following command.
+
+```{r load-data, eval=TRUE}
+source("more/cdc.R")
+```
+
+
+Some define Statistics as the field that focuses on turning information into
+knowledge.  The first step in that process is to summarize and describe the raw
+information - the data.  In this lab, you will gain insight into public health
+by generating simple graphical and numerical summaries of a data set collected 
+by the Centers for Disease Control and Prevention (CDC).  As this is a large 
+data set, along the way you'll also learn the indispensable skills of data 
+processing and subsetting.
+
+```{r names, eval=TRUE}
+names(cdc)
+```
+
+This returns the names `genhlth`, `exerany`, `hlthplan`, `smoke100`, `height`, 
+`weight`, `wtdesire`, `age`, and `gender`. Each one of these variables 
+corresponds to a question that was asked in the survey.  For example, for 
+`genhlth`, respondents were asked to evaluate their general health, responding
+either excellent, very good, good, fair or poor. The `exerany` variable 
+indicates whether the respondent exercised in the past month (1) or did not (0).
+Likewise, `hlthplan` indicates whether the respondent had some form of health 
+coverage (1) or did not (0). The `smoke100` variable indicates whether the 
+respondent had smoked at least 100 cigarettes in her lifetime. The other 
+variables record the respondent's `height` in inches, `weight` in pounds as well
+as their desired weight, `wtdesire`, `age` in years, and `gender`.
+
+###1.  How many cases are there in this data set?  How many variables?  For each variable, identify its data type (e.g. categorical, discrete).
+
+```{r cdc data, eval=TRUE}
+str(cdc)
+```
+
+There are 20,000 rows which represent cases.
+
+There are 9 variables: genhlth - categorical (ordinal), exerany - categorical, hlthplan - categorical, smoke100 - categorical, height - numeric (discrete), weight - numeric (discrete), wtdesire - numeric (discrete), age - numeric (discrete), and gender - categorical.
+
+## Summaries and tables
+
+The BRFSS questionnaire is a massive trove of information.  A good first step in
+any analysis is to distill all of that information into a few summary statistics
+and graphics.  As a simple example, the function `summary` returns a numerical 
+summary: minimum, first quartile, median, mean, second quartile, and maximum. 
+
+
+###2.  Create a numerical summary for `height` and `age`, and compute the interquartile range for each. 
+For `height` and `age`this is:
+
+```{r summary-weight, eval=TRUE}
+summary(cdc$height)
+summary(cdc$age)
+```
+
+The Interquartile range for height is 
+
+```{r IQR height, eval=TRUE}
+70-64
+```
+
+The Interquartile range for age is 
+
+```{r IQR age, eval=TRUE}
+57-31
+```
+
+###Compute the relative frequency distribution for `gender` and `exerany`. How many males are in the sample? What proportion of the sample reports being in excellent health?
+
+
+```{r   eval=TRUE}
+table(cdc$gender)
+```
+
+There are 9569 males in the sample.
+
+The frequency distribution for gender and exerany:
+
+```{r   eval=TRUE}
+table(cdc$gender)/20000
+table(cdc$exerany)/20000
+```
+The proportion of the sample reporting to be in excellent health:
+```{r genhlth excellent, eval=TRUE}
+sum(cdc$genhlth == "excellent")/20000*100
+```
+
+###3.  What does the mosaic plot reveal about smoking habits and gender?
+
+```{r mosaic-smoke-gender, eval=TRUE}
+mosaicplot(table(cdc$gender,cdc$smoke100))
+```
+
+More males than females reported smoking at least 100 cigarettes.
+
+## Quantitative data
+
+The following two lines first make a new object called `bmi` and then creates 
+box plots of these values, defining groups by the variable `cdc$genhlth`.
+
+```{r boxplot-bmi, eval=TRUE}
+bmi <- (cdc$weight / cdc$height^2) * 703
+boxplot(bmi ~ cdc$genhlth)
+```
+
+###4.  What does this box plot show? 
+
+As BMI increases, the level of health moves progressively from excellent to poor.
+
+###Pick another categorical variable from the data set and see how it relates to BMI. List the variable you chose, why you might think it would have a relationship to BMI,  and indicate what the figure seems to suggest.
+
+```{r boxplot-bmi v , eval=TRUE}
+bmi <- (cdc$weight / cdc$height^2) * 703
+boxplot(bmi ~ cdc$age)
+```
+
+There does seem to be a general trend towards a higher BMI during middle age.
+
+
+## On Your Own
+
+###-   Make a scatterplot of weight versus desired weight. Describe the relationship between these two variables.
+
+```{r scatterplot of wt v wtdesire, eval=TRUE}
+plot(cdc$weight, cdc$wtdesire, pch=".")
+```
+
+There is a distinct line that demonstrates that almost no one has a desired weight higher than the one they are at currently.
+
+
+###-   Let's consider a new variable: the difference between desired weight (`wtdesire`) and current weight (`weight`). Create this new variable by subtracting the two columns in the data frame and assigning them to a new object called `wdiff`.
+
+```{r wdiff, eval=TRUE}
+wdiff <- cdc$wtdesire - cdc$weight
+str(wdiff)
+summary(wdiff)
+```
+
+###-   What type of data is `wdiff`? If an observation `wdiff` is 0, what does this mean about the person's weight and desired weight. What if `wdiff` is positive or negative?
+
+Wdiff is a numerical data type, if wdiff is 0 then there is no difference between the desired weight and the current weight. If it is positive then the desired weight is higher than the current weight and a negative wdiff indicates that the desired weight is lower than the current weight.
+
+###-   Describe the distribution of `wdiff` in terms of its center, shape, and spread, including any plots you use. What does this tell us about how people feel about their current weight?
+
+```{r boxplot wdiff, eval=TRUE}
+hist(wdiff, breaks = 100)
+boxplot(wdiff, ylim = c(-100,100))
+```
+
+The histogram shows an almost symmetric but slighty left skewed plot of the data and the boxplot shows that the median is negative. The plots show that there are a greater number of people who want to lose weight from the current weight than those who want to gain weight.
+
+###-   Using numerical summaries and a side-by-side box plot, determine if men tend to view their weight differently than women.
+
+```{r men v women, eval=TRUE}
+mweight <- subset(cdc$weight, cdc$gender =="m")
+mwtdesire <- subset(cdc$wtdesire, cdc$gender =="m")
+mwdiff<- mwtdesire - mweight
+summary(mwdiff)
+fweight <- subset(cdc$weight, cdc$gender =="f")
+fwtdesire <- subset(cdc$wtdesire, cdc$gender =="f")
+fwdiff<- fwtdesire - fweight
+summary(fwdiff)
+
+boxplot(wdiff ~ cdc$gender, ylim = c(-100,100))
+
+```
+
+More women want to lose weight than men.
+
+
+###-   Now it's time to get creative. Find the mean and standard deviation of `weight` and determine what proportion of the weights are within one standard deviation of the mean.
+
+```{r mean nad std of wt, eval=TRUE}
+summary(cdc$weight)
+mean(cdc$weight)
+sd(cdc$weight)
+
+within <- ifelse( (cdc$weight > (mean(cdc$weight)-1*sd(cdc$weight))) &
+                  (cdc$weight < (mean(cdc$weight)+1*sd(cdc$weight))), 1, 0)
+totalSamples <- nrow(cdc)
+
+sum(within) / totalSamples
+```
+
+The proportion of the weights that are within one standard deviation of the mean is 70.76%.
+
+
+

@@ -1,0 +1,161 @@
+---
+title: "Data606Homework1"
+author: "Stephanie Roark"
+date: "9/9/2018"
+output:
+ html_document:
+    theme: cosmo
+    highlight: pygments
+---
+
+# Introduction to Data
+
+###1.8 Smoking habits of UK residents. 
+A survey was conducted to study the smoking habits of UK residents. Below is a data matrix displaying a portion of the data collected in this survey.
+
+####(a) What does each row of the data matrix represent?
+
+Each row represents a UK resident interviewed for the survey.
+
+####(b) How many participants were included in the survey?
+
+1691
+
+####(c) Indicate whether each variable in the study is numerical or categorical. 
+
+sex = Categorical
+age = Numerical (discrete)
+marital = Categorical
+grossIncome = ategorical (ordinal)
+smoke = Categorical
+amtWeekends = Numerical (discrete)
+amtWeekdays = Numerical (discrete)
+
+###1.10 Cheaters, scope of inference. 
+Exercise 1.5 introduces a study where researchers studying the relationship between honesty, age, and self-control conducted an experiment on 160 children
+between the ages of 5 and 15. The researchers asked each child to toss a fair coin in private and to record the outcome (white or black) on a paper sheet, and said they would only reward children who report white. Half the students were explicitly told not to cheat and the others were not given any explicit instructions. Di↵erences were observed in the cheating rates in the instruction and no instruction groups, as well as some di↵erences across children’s characteristics within each group.
+
+####(a) Identify the population of interest and the sample in this study.
+
+The population of interest is children aged 5 to 15 and the sample group are the 160 children between ages 5 and 15.
+
+####(b) Comment on whether or not the results of the study can be generalized to the population, and if the findings of the study can be used to establish causal relationships.
+
+Assuming that the experiment is conducted on a simple sample of children aged from 5 to 15 randomly divided up between the instructions/no instructions groups, then yes the study can be generalized to the population of children 5 to 15. The study does not however mention any randomization occuring in the design, so there is not enough information to conclude that it can be generalized to the population of children 5 to 15.
+
+###1.28 Reading the paper. Below are excerpts from two articles published in the NY Times:
+####(a) An article titled Risks: Smokers Found More Prone to Dementia states the following: “Researchers analyzed data from 23,123 health plan members who participated in a voluntary exam and health behavior survey from 1978 to 1985, when they were 50-60 years old. 23 years later, about 25% of the group had dementia, including 1,136 with Alzheimer’s disease and 416 with vascular dementia. After adjusting for other factors, the researchers concluded that pack-aday smokers were 37% more likely than nonsmokers to develop dementia, and the risks went up with increased smoking; 44% for one to two packs a day; and twice the risk for more than two packs.” Based on this study, can we conclude that smoking causes dementia later in life? Explain your reasoning.
+
+Propsective Observational studies cannot be used to conclude causal relationships between the variables as the study is only observing the effect of the risk factors on the cohort of particpants. We can conclude that these variables could be associated but cannot conclude causation.
+
+####(b) Another article titled The School Bully Is Sleepy states the following: “The University of Michigan study, collected survey data from parents on each child’s sleep habits and asked both parents and teachers to assess behavioral concerns. About a third of the students studied were identified by parents or teachers as having problems with disruptive behavior or bullying. The researchers found that children who had behavioral issues and those who were identified as bullies were twice as likely to have shown symptoms of sleep disorders.” A friend of yours who read the article says, “The study shows that sleep disorders lead to bullying in school children.” Is this statement justified? If not, how best can you describe the conclusion that can be drawn from this study?
+
+The observational study of children's sleep habits retrospectively looked for associations between sleep and other factors such as bullying behavior. This association cannot be concluded to be causal because other factors where not controled in a randomized experimental study. The link could be influenced by many other factors that were not examined in the study. The factors of sleep disorders and behavioral issues could be connected but cannot be concluded to be causally linked.
+
+###1.36 Exercise and mental health. 
+A researcher is interested in the effcts of exercise on mental health and he proposes the following study: Use stratified random sampling to ensure representative proportions of 18-30, 31-40 and 41- 55 year olds from the population. Next, randomly assign half the subjects from each age group to exercise twice a week, and instruct the rest not to exercise. Conduct a mental health exam at the beginning and at the end of the study, and compare the results.
+
+####(a) What type of study is this?
+
+The study is a designed experimental with stratified sampling.
+
+####(b) What are the treatment and control groups in this study?
+
+The treatment group are the subjects who exercised twice a week while the control group did not exercise.
+
+####(c) Does this study make use of blocking? If so, what is the blocking variable?
+
+Yes, the blocking variable is the age groups of 18-30, 31-40 and 41-55 year olds.
+
+####(d) Does this study make use of blinding?
+
+No blinding is not utilized in this study as the researchers know who is exercising.
+
+####(e) Comment on whether or not the results of the study can be used to establish a causal relationship between exercise and mental health, and indicate whether or not the conclusions can be generalized to the population at large.
+
+The study is a designed experiment with randomized, blocked sampling of the population with a test group and a control group so yes the results can be generalized to the population at large.
+
+####(f) Suppose you are given the task of determining if this proposed study should get funding. Would you have any reservations about the study proposal?
+
+There could be many factors influencing mental health that are not considered in this study and thus would have reservations about narrowing the focus to solely to exercise without controlling for other factors.
+
+###1.48 Stats scores. 
+Below are the final exam scores of twenty introductory statistics students.
+57, 66, 69, 71, 72, 73, 74, 77, 78, 78, 79, 79, 81, 81, 82, 83, 83, 88, 89, 94
+Create a box plot of the distribution of these scores. The five number summary provided below may be useful.
+Min Q1 Q2 (Median) Q3 Max
+57 72.5 78.5 82.5 94
+
+```{r exam scores boxplot, eval=TRUE}
+scores <- c(57, 66, 69, 71, 72, 73, 74, 77, 78, 78, 79, 79, 81, 81, 82, 83, 83, 88, 89, 94)
+boxplot(scores)
+
+```
+
+###1.50 Mix-and-match. 
+Describe the distribution in the histograms below and match them to the box plots.
+
+a) is symmetrically distributed, unimodal and matches to #2
+b) is multimodal and matched to #3
+c) is unimodal, skewed right and is matched to #1
+
+###1.56 Distributions and appropriate statistics, Part II . 
+For each of the following, state whether you expect the distribution to be symmetric, right skewed, or left skewed. Also specify whether the mean or median would best represent a typical observation in the data, and whether the variability of observations would be best represented using the standard deviation or IQR. Explain your reasoning.
+
+####(a) Housing prices in a country where 25% of the houses cost below $350,000, 50% of the houses cost below $450,000, 75% of the houses cost below $1,000,000 and there are a meaningful number of houses that cost more than $6,000,000.
+
+The distribution would be right skewed as the observations in the third quartile spanning from $1,000,000 to $6,000,000 are more spread out than the first quartile.The median would represent a typical observation better than the mean because of the right skewing of the data. The IQR would be more appropriate because the right skewing of the data will cause the the standard deviation to be less useful.
+
+####(b) Housing prices in a country where 25% of the houses cost below $300,000, 50% of the houses cost below $600,000, 75% of the houses cost below $900,000 and very few houses that cost more than $1,200,000.
+
+The distribution will almost symmetric with the mean and median being very nearly equal. The standard deviation or IQR will both accurately represent the variability.
+
+####(c) Number of alcoholic drinks consumed by college students in a given week. Assume that most of these students don’t drink since they are under 21 years old, and only a few drink excessively.
+
+Since most students who drink will have a small number of drinks and only a few will have many, this distribution would be right skewed with the median being more representative of a typical observation. The IQR will represent the variability of that data better than the mean which will be affected by the long right tail. 
+
+####(d) Annual salaries of the employees at a Fortune 500 company where only a few high level executives earn much higher salaries than the all other employees.
+
+The distribution will be closer to symmetric for a large portion of the employees but the high level executive outliers will cause it to right skew with the median representing a typical observation and the IQR better describing the variability.
+
+###1.70 Heart transplants. 
+The Stanford University Heart Transplant Study was conducted to determine whether an experimental heart transplant program increased lifespan. Each patient entering the program was designated an ocial heart transplant candidate, meaning that he was gravely ill and would most likely benefit from a new heart. Some patients got a transplant and some did not. The variable transplant indicates which group the patients were in; patients in the treatment group got a transplant and those in the control group did not. Another variable called survived was used to indicate whether or not the patient was alive at the end of the study.
+
+####(a) Based on the mosaic plot, is survival independent of whether or not the patient got a transplant? Explain your reasoning.
+
+Survival  is dependent on getting the transplant as the mosaic plot clearly shows an increase in the number of transplant patients still alive at the end of the trial.
+
+####(b) What do the box plots below suggest about the efficacy (effectiveness) of the heart transplant treatment.
+
+The survival time has a much higher range for the treatment group than the control suggesting that transplants increases survival times.
+
+####(c) What proportion of patients in the treatment group and what proportion of patients in the control group died?
+
+30 out of 34 control patients died or a proportion of 0.8823529 or 88.24%.
+45 out of 69 treatment patients died or a proportion of 0.6521739 or 65.22%. 
+
+####(d) One approach for investigating whether or not the treatment is effective is to use a randomization technique.
+#####i. What are the claims being tested?
+
+The null hypothesis is that the survival time of the heart patients is independent of transplant treatment or that the difference in the control group's death rates as compared to the treatment groups is due to chance. 
+
+The competing hypothesis is that the survival time is dependent on receiving the transplant treatment and that the difference in outcomes between the 2 groups is not due to chance.
+
+#####ii. The paragraph below describes the set up for such approach, if we were to do it without using statistical software. Fill in the blanks with a number or phrase, whichever is appropriate.
+We write alive on 28 cards representing patients who were alive at
+the end of the study, and dead on 75 cards representing patients
+who were not. Then, we shuffle these cards and split them into two groups:
+one group of size 69 representing treatment, and another group of
+size 34 representing control. We calculate the difference between
+the proportion of dead cards in the treatment and control groups (treatment -
+control) and record this value. We repeat this 100 times to build a distribution
+centered at 0. Lastly, we calculate the fraction of simulations where
+the simulated differences in proportions are greater than or equal to the difference due to chance. If this fraction is low, we conclude that it is unlikely to have observed such an outcome by chance and
+that the null hypothesis should be rejected in favor of the alternative.
+
+
+#####iii. What do the simulation results shown below suggest about the effectiveness of the transplant program?
+
+The results show that the fraction of simulations is lower than the proportion which could be due to chance and that the null hypothesis should be rejected.
+
+
