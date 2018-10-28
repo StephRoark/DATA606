@@ -1,0 +1,237 @@
+---
+title: "Data606Homework5"
+author: "Stephanie Roark"
+date: "10/28/2018"
+output:
+  html_document:
+    highlight: pygments
+    theme: cosmo
+  pdf_document: default
+---
+
+####5.6 Working backwards, Part II. 
+A 90% confidence interval for a population mean is (65, 77). The population distribution is approximately normal and the population standard deviation is unknown. This confidence interval is based on a simple random sample of 25 observations. Calculate the sample mean, the margin of error, and the sample standard deviation.
+
+n = 25
+ci = (65, 77) 
+The sample mean is the midpoint of the confidence interval:
+
+```{r sm, eval=TRUE}
+x1 <- 65
+x2 <- 77
+sample_mean <- (x1+x2)/2
+sample_mean
+```
+
+The margin of error is:
+
+```{r ME, eval=TRUE}
+ME <- (x2-x1)/2 
+ME
+```
+
+The sample standard deviation is calculated from ci = ¯x +_ tdf*SE:
+
+SE = (ME/t∗24)√n
+
+```{r 5.6, eval=TRUE}
+n <- 25
+df <- n-1
+c <- .9
+ci <- c +(1-c)/2
+ci
+t24 <- qt(ci, df)
+t24
+s <- (ME*sqrt(25))/(t24)
+s
+```
+
+####5.14 SAT scores. 
+SAT scores of students at an Ivy League college are distributed with a standard deviation of 250 points. Two statistics students, Raina and Luke, want to estimate the average SAT score of students at this college as part of a class project. They want their margin of error to be no more than 25 points.
+
+(a) Raina wants to use a 90% confidence interval. How large a sample should she collect?
+
+```{r 5.14, eval=TRUE}
+ME <- 25
+SD <- 250
+T = qnorm(0.95)
+X = ((SD * T) / ME)^2
+X
+```
+
+The smallest sample Raina should collect is 271.
+
+(b) Luke wants to use a 99% confidence interval. Without calculating the actual sample size,
+determine whether his sample should be larger or smaller than Raina’s, and explain your
+reasoning.
+
+Luke's sample size would need to be larger than Raina's because making the confidence interval more narrow would require a larger data set.
+
+(c) Calculate the minimum required sample size for Luke.
+
+```{r 5.14C , eval=TRUE}
+ME <- 25
+SD <- 250
+T = qnorm(0.995)
+X = ((SD * T) / ME)^2
+X
+```
+
+Luke's sample size would need to be at least 664.
+
+####5.20 High School and Beyond, Part I. 
+The National Center of Education Statistics conducted a survey of high school seniors, collecting test data on reading, writing, and several other subjects. Here we examine a simple random sample of 200 students from this survey. 
+
+(a) Is there a clear difference in the average reading and writing scores?
+
+Yes there is a noticeable difference in the means of the reading and writing scores but it is not a large difference. The histogram does seem to be centered close to 0 which suggests it is a very small difference.
+
+(b) Are the reading and writing scores of each student independent of each other?
+
+The reading and writing scores are paired as they both relate to one student.
+
+(c) Create hypotheses appropriate for the following research question: is there an evident difference
+in the average scores of students in the reading and writing exam?
+
+H0: µ(reading) = µ(writing)
+There is no difference in the student's average scores on the reading and writing exam.
+H1: µ(reading) < or > µ(writing)
+There is a difference in the student's average scores on the reading and writing exam.
+
+(d) Check the conditions required to complete this test.
+
+The conditions required to use the t distribution are indepedence and nearly normal.
+
+Independence is met as we have a simple, random sample of less than 10% of the population. 
+ The nearly normal requirement is met also as the sample is greater than 30 which helps correct any skewing.
+
+(e) The average observed difference in scores is ¯xreadwrite = 0.545, and the standard deviation
+of the differences is 8.887 points. Do these data provide convincing evidence of a difference between the average scores on the two exams? 
+
+We can see from the boxplot that the difference in the means is negative as writing is subtracted from reading.
+
+```{r Htest, eval=TRUE}
+xRW <- -0.545
+SDRW <- 8.887
+n <- 200
+df <- n - 1
+SE <- SDRW / sqrt(n)
+Tdf <- (xRW - 0)/(SE)
+p <- pt(Tdf, df) * 2
+p
+```
+
+The p-value is 0.387 which is greater than 0.05. We cannot reject the null hypothesis that there is no difference.
+
+(f) What type of error might we have made? Explain what the error means in the context of the application.
+
+A Type II error which is failing to reject a false null hypothesis also known as a "false negative" finding.
+
+(g) Based on the results of this hypothesis test, would you expect a confidence interval for the
+average difference between the reading and writing scores to include 0? Explain your reasoning.
+
+Yes, a confidence interval which includes zero would support our result of not rejecting the null hypothesis. If there is no difference in a student's average scores on the reading and writing exams then µ(reading) = µ(writing) or µ(reading) - µ(writing) = 0.
+
+####5.3 Fuel eciency of manual and automatic cars, Part I. 
+Each year the US Environmental Protection Agency (EPA) releases fuel economy data on cars manufactured in that year. Below are summary statistics on fuel eciency (in miles/gallon) from random samples of cars with
+manual and automatic transmissions manufactured in 2012. Do these data provide strong evidence of a difference between the average fuel eciency of cars with manual and automatic transmissions
+in terms of their average city mileage? Assume that conditions for inference are satisfied.
+
+City MPG
+Automatic Manual
+Mean 16.12 19.85
+SD   3.58  4.51
+n    26    26
+
+```{r fuel-eff, eval=TRUE}
+mu_auto <- 16.12
+mu_man <- 19.85
+SD_auto <- 3.58
+SD_man <- 4.51
+n <- 26
+df <- n - 1
+diff_mu <- mu_auto - mu_man
+SE = sqrt((SD_auto^2/n) + (SD_man^2/n))
+t = (diff_mu)/(SE)
+p = pt(t,df) * 2
+p
+```
+
+The p-value is 0.00288 and would suggest that there is a difference between the average fuel eciency of cars with manual and automatic transmissions in terms of their average city mileage.
+
+####5.48 Work hours and education. 
+The General Social Survey collects data on demographics, education, and work, among many other characteristics of US residents. Using ANOVA, we can consider educational attainment levels for all 1,172 respondents at once. Below are the distributions of hours worked by educational attainment and relevant summary statistics that will be helpful in carrying out this analysis.
+
+Educational attainment
+Less than HS HS Jr Coll Bachelor’s Graduate Total
+Mean 38.67 39.6 41.39 42.55 40.85 40.45
+SD 15.81 14.97 18.1 13.62 15.51 15.17
+n 121 546 97 253 155 1,172
+
+(a) Write hypotheses for evaluating whether the average number of hours worked varies across the
+five groups.
+
+H0: µ(hours_LessthanHS) = µ(HS)  µ(JrColl) = µ(Bachelors) = µ(Grad)
+The average hours across all educated groups are equal.
+H1: µ(hours_LessthanHS) - µ(HS) - µ(JrColl) - µ(Bachelors) - µ(Grad) not = 0
+The average hours across all educated groups are  not equal.
+
+(b) Check conditions and describe any assumptions you must make to proceed with the test.
+
+These conditions are all satisfied:
+Independence - 1,172 is less than 10% of population and the population is randomly sampled.
+Approximately Normal - sample size is greater than 30 and/or not highly skewed.
+Constant Variance - the variance across groups is approximately equal as the means and standard deviations are all close to each other.
+
+(c) Below is part of the output associated with this test. Fill in the empty cells.
+          Df    SumSq  MeanSq F value Pr(>F)
+  degree  XXXXX XXXXX  501.54 XXXXX   0.0682
+Residuals XXXXX 267,382 XXXXX
+    Total XXXXX XXXXX
+
+MSG = SSG / df_G
+SSG = MSG * df_G
+SSE = SST - SSG
+MSE = SSE / df_E
+F = MSG / MSE
+
+```{r anova, eval=TRUE}
+n <- 1172
+k <- 5
+MSG <- 501.54
+SSE <- 267382
+
+#df_groups
+df_G <- k-1
+df_G
+
+#df_res
+df_E <- n-k
+df_E
+
+#dfTotal
+df_Total <- df_G + df_E
+df_Total
+
+#SumSq_groups
+SSG <- df_G * MSG
+SSG
+
+#SumSq_res
+SSE
+
+#Mean_res
+MSE <- SSE / df_E
+MSE
+
+#Fvalue
+F <- MSG / MSE
+F
+```
+
+(d) What is the conclusion of the test?
+
+Our p-value is 0.0682 which is larger than 0.05, so we fail to reject H0.
+
+
+
