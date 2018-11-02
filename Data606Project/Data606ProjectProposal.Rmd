@@ -1,0 +1,126 @@
+---
+title: DATA 606 Data Project Proposal
+author: Stephanie Roark
+date: "11/01/2018"
+output:
+  html_document:
+    theme: cosmo
+  pdf_document: default
+---
+
+### Data Preparation
+
+```{r setup, eval=TRUE, warning=FALSE, message=FALSE}
+library(tidyverse)
+library(psych)
+
+bc_data <- read.csv("wisc_bc_data.csv")
+
+#create bucket variable for radius mean which is either top half or bottom half
+bc_data <- bc_data %>% 
+    mutate(radius_mean_size = ifelse(radius_mean < 19.7,"bottom half", "top half") )
+
+str(bc_data)
+```
+
+
+### Research question 
+
+Are any of the variables or any combination of the variables predictors for a malignant or benign diagnosis?
+
+### Cases 
+
+**What are the cases, and how many are there?**
+
+Each case represents a sample from a biopsy of a breast mass. There `r nrow(bc_data)` observations in the given data set.
+
+### Data collection 
+
+**Describe the method of data collection.**
+
+"Features are computed from a digitized image of a fine needle aspirate (FNA) of a breast mass. They describe characteristics of the cell nuclei present in the image."
+
+### Type of study 
+
+**What type of study is this (observational/experiment)?**
+
+This study is an observational study of the biopsied breast tissue mass.
+
+### Data Source 
+
+**If you collected the data, state self-collected. If not, provide a citation/link.**
+
+This database is also available through the UW CS ftp server: ftp ftp.cs.wisc.edu cd math-prog/cpo-dataset/machine-learn/WDBC/
+
+Also can be found on UCI Machine Learning Repository: https://archive.ics.uci.edu/ml/datasets/Breast+Cancer+Wisconsin+%28Diagnostic%29
+
+Dua, D. and Karra Taniskidou, E. (2017). UCI Machine Learning Repository [http://archive.ics.uci.edu/ml]. Irvine, CA: University of California, School of Information and Computer Science.
+
+Creators: 
+
+1. Dr. William H. Wolberg, General Surgery Dept. 
+University of Wisconsin, Clinical Sciences Center 
+Madison, WI 53792 
+wolberg '@' eagle.surgery.wisc.edu 
+
+2. W. Nick Street, Computer Sciences Dept. 
+University of Wisconsin, 1210 West Dayton St., Madison, WI 53706 
+street '@' cs.wisc.edu 608-262-6619 
+
+3. Olvi L. Mangasarian, Computer Sciences Dept. 
+University of Wisconsin, 1210 West Dayton St., Madison, WI 53706 
+olvi '@' cs.wisc.edu 
+
+
+### Dependent Variable
+
+**What is the response variable, and what type is it (numerical/categorical)?**
+
+The response variable is the diagnosis which is a qualitative binary categorical variable.
+
+### Independent Variable
+
+**What is the explanatory variable, and what type is it (numerical/categorical)?**
+**You should have two independent variables, one quantitative and one qualitative.**
+
+There are 30 independent variables which are quantitative and an additional variable conputed from radius_mean called radius_mean_size is a qualitative variable that describes the size of the mass as being in the bottom half or top half of the size range. The variables are all aspects of the tissue samples and include the mean, standard error and worst case for each variable.
+
+Ten real-valued features are computed for each cell nucleus: 
+
+a) radius (mean of distances from center to points on the perimeter) 
+b) texture (standard deviation of gray-scale values) 
+c) perimeter 
+d) area 
+e) smoothness (local variation in radius lengths) 
+f) compactness (perimeter^2 / area - 1.0) 
+g) concavity (severity of concave portions of the contour) 
+h) concave points (number of concave portions of the contour) 
+i) symmetry 
+j) fractal dimension ("coastline approximation" - 1)
+
+### Relevant summary statistics 
+
+**Provide summary statistics for each the variables. Also include appropriate visualizations related to your research question (e.g. scatter plot, boxplots, etc). This step requires the use of R, hence a code chunk is provided below. Insert more code chunks as needed.**
+
+```{r summary, eval=TRUE, warning=FALSE, message=FALSE}
+summary(bc_data)
+
+describe(bc_data %>% select(-id, -diagnosis))
+
+table(bc_data$diagnosis)
+```
+
+Boxplots of the 10 mean variables vs. diagnosis:
+
+```{r plots, eval=TRUE}
+boxplot(radius_mean ~ diagnosis, data = bc_data)
+boxplot(texture_mean ~ diagnosis, data = bc_data)
+boxplot(perimeter_mean ~ diagnosis, data = bc_data)
+boxplot(area_mean ~ diagnosis, data = bc_data)
+boxplot(smoothness_mean ~ diagnosis, data = bc_data)
+boxplot(compactness_mean ~ diagnosis, data = bc_data)
+boxplot(concavity_mean ~ diagnosis, data = bc_data)
+boxplot(concave.points_mean ~ diagnosis, data = bc_data)
+boxplot(symmetry_mean ~ diagnosis, data = bc_data)
+boxplot(fractal_dimension_mean ~ diagnosis, data = bc_data)
+```
