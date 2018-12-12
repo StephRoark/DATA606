@@ -1,0 +1,185 @@
+---
+title: "Data 606 FinalProject"
+author: "Stephanie Roark"
+date: "12/12/2018"
+output: html_document
+---
+
+The final report should be presented in more formal format. Consider your audience to be non data analysts. Fellow data analysts (i.e. students) will be able to access your R Markdown file for details on the analysis. Submit a Zip file with your R Markdown file, the HTML output, and any supplementary files (e.g. data, figures, etc.). You must address the five following sections:
+
+```{r  global_options, include=FALSE}
+knitr::opts_chunk$set(echo=TRUE, eval=TRUE, warning=FALSE, message=FALSE)
+```
+
+## Part 1 - Introduction
+
+Breast cancer is one of the most dreaded and deadly cancer diagnosis that woman can receive. For women in the U.S., breast cancer death rates are higher than those for any other cancer, besides lung cancer. Many institutions have dedicated years of research into improving the survival chances of breast cancer patients and there has been a measure of improvement in the new incidence rates since 2000. Treatment advances, earlier detection through screening, and increased awareness are all key factors in surviving breast cancer and the emergence of machine learning in medical research is an important step in detecting and predicting malignant tumors.
+
+Each year it is estimated that over 252,710 US women will be diagnosed with breast cancer. About 1 in 8 US women will develop invasive breast cancer over the course of her lifetime. Invasive cancer, or Stage-4 breast cancer, is also called metastatic breast cancer. Metastasis happens when cancer cells migrate from the breast elsewhere in the body, triggering cancerous growth and is terminal meaning there is no cure. More than 40,000 US women a year die from metastatic breast cancer and that number has not changed since 1970. Research enabling earlier detection of malignancy is imperative to the survival of women diagnosed with breast cancer.
+
+Tests such as MRI, mammogram, ultrasound and biopsy are commonly used to diagnose breast cancer. Dr. William H. Wolberg, a physician at the University Of Wisconsin Hospital at Madison, created a dataset using Fine Needle Aspiration biopsies to collect samples from patients with solid breast masses and a computer vision approach known as "snakes" to compute values for each of ten characteristics of each nuclei, measuring size, shape and texture. The mean, standard error and extreme values of these features are computed, resulting in a total of 30 nuclear features for each sample.
+
+Using this dataset we can examine the observations of the biospies and investigate whether there are any variables or any combination of the variables which are predictors for a malignant or benign diagnosis.
+
+## Part 2 - Data
+
+```{r data, include=TRUE}
+library(tidyverse)
+library(psych)
+
+bc_data <- read.csv("wisc_bc_data.csv")
+
+#create bucket variable for radius mean which is either top half or bottom half
+bc_data <- bc_data %>% 
+    mutate(radius_mean_size = ifelse(radius_mean < 19.7,"bottom half", "top half") )
+
+str(bc_data)
+``` 
+
+Write about the data from your proposal in text form. Address the following points:
+
+###Data collection: 
+Describe how the data were collected.
+
+"Features are computed from a digitized image of a fine needle aspirate (FNA) of a breast mass. They describe characteristics of the cell nuclei present in the image."
+
+###Cases: 
+
+Each case represents an individual sample or observation of tissue taken from a biopsy of a breast mass. There `r nrow(bc_data)` observations in the given data set. 
+
+###Variables: 
+What are the two variables you will be studying? State the type of each variable.
+
+####Dependent Variable
+
+The response variable is the diagnosis which is a qualitative binary categorical variable of either benign or malignant.
+
+####Independent Variables
+
+There are 30 independent variables which are quantitative and an additional variable conputed from radius_mean called radius_mean_size is a qualitative variable that describes the size of the mass as being in the bottom half or top half of the size range. The variables are all aspects of the tissue samples and include the mean, standard error and worst case for each variable.
+
+Ten real-valued features are computed for each cell nucleus: 
+
+a) radius (mean of distances from center to points on the perimeter) 
+b) texture (standard deviation of gray-scale values) 
+c) perimeter 
+d) area 
+e) smoothness (local variation in radius lengths) 
+f) compactness (perimeter^2 / area - 1.0) 
+g) concavity (severity of concave portions of the contour) 
+h) concave points (number of concave portions of the contour) 
+i) symmetry 
+j) fractal dimension ("coastline approximation" - 1)
+
+All feature values are recoded with four significant digits.
+
+Missing attribute values: none
+
+Class distribution: 357 benign, 212 malignant
+
+
+###Type of study: 
+What is the type of study, observational or an experiment? Explain how you’ve arrived at your conclusion using information on the sampling and/or experimental design.
+
+This study is an observational study of the biopsied breast tissue mass.
+
+###Scope of inference - generalizability: 
+Identify the population of interest, and whether the findings from this analysis can be generalized to that population, or, if not, a subsection of that population. Explain why or why not. Also discuss any potential sources of bias that might prevent generalizability.
+
+###Scope of inference - causality: 
+Can these data be used to establish causal links between the variables of interest? Explain why or why not.
+
+## Part 3 - Exploratory Data Analysis
+
+Perform relevant descriptive statistics, including summary statistics and visualization of the data. Also address what the exploratory data analysis suggests about your research question.
+
+```{r summary, include=TRUE}
+#check for missing values and summary statistics
+summary(bc_data)
+
+describe(bc_data %>% select(-id, -diagnosis))
+#how many benign and malignant observations
+table(bc_data$diagnosis)
+```
+
+There are no missing values.
+
+Boxplots of the 10 mean variables vs. diagnosis:
+
+```{r plots}
+boxplot(radius_mean ~ diagnosis, data = bc_data)
+boxplot(texture_mean ~ diagnosis, data = bc_data)
+boxplot(perimeter_mean ~ diagnosis, data = bc_data)
+boxplot(area_mean ~ diagnosis, data = bc_data)
+boxplot(smoothness_mean ~ diagnosis, data = bc_data)
+boxplot(compactness_mean ~ diagnosis, data = bc_data)
+boxplot(concavity_mean ~ diagnosis, data = bc_data)
+boxplot(concave.points_mean ~ diagnosis, data = bc_data)
+boxplot(symmetry_mean ~ diagnosis, data = bc_data)
+boxplot(fractal_dimension_mean ~ diagnosis, data = bc_data)
+```
+ 
+
+## Part 4 - Inference
+
+If your data fails some conditions and you can’t use a theoretical method, then you should use simulation. If you can use both methods, then you should use both methods. It is your responsibility to figure out the appropriate methodology.
+
+###Check conditions
+
+Conditions for Regression:
+
+ - The residuals of the model are nearly normal  
+ - The variability of the residuals is nearly constant 
+ - The residuals are independent 
+ - Each variable is linearly related to the outcome 
+
+###Theoretical inference (if possible) - 
+hypothesis test and confidence interval
+
+```{r lm}
+bc_model <- lm()
+
+# Assessing Outliers
+outlierTest(bc_model)
+#qq plot for studentized resid 
+qqPlot(fit, main="QQ Plot")
+# leverage plots
+leveragePlots(fit) 
+```
+
+###Simulation based inference - 
+hypothesis test and confidence interval
+
+###Brief description of methodology that reflects your conceptual understanding
+
+## Part 5 - Conclusion
+
+Write a brief summary of your findings without repeating your statements from earlier. Also include a discussion of what you have learned about your research question and the data you collected. You may also want to include ideas for possible future research.
+
+
+### References
+
+This database is also available through the UW CS ftp server: ftp ftp.cs.wisc.edu cd math-prog/cpo-dataset/machine-learn/WDBC/
+
+Also can be found on UCI Machine Learning Repository: https://archive.ics.uci.edu/ml/datasets/Breast+Cancer+Wisconsin+%28Diagnostic%29
+
+Dua, D. and Karra Taniskidou, E. (2017). UCI Machine Learning Repository [http://archive.ics.uci.edu/ml]. Irvine, CA: University of California, School of Information and Computer Science.
+
+Creators: 
+
+1. Dr. William H. Wolberg, General Surgery Dept. 
+University of Wisconsin, Clinical Sciences Center 
+Madison, WI 53792 
+wolberg '@' eagle.surgery.wisc.edu 
+
+2. W. Nick Street, Computer Sciences Dept. 
+University of Wisconsin, 1210 West Dayton St., Madison, WI 53706 
+street '@' cs.wisc.edu 608-262-6619 
+
+3. Olvi L. Mangasarian, Computer Sciences Dept. 
+University of Wisconsin, 1210 West Dayton St., Madison, WI 53706 
+olvi '@' cs.wisc.edu 
+
+### Appendix (optional)
+
+Remove this section if you don't have an appendix
