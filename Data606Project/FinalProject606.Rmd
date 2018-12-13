@@ -5,15 +5,13 @@ date: "12/12/2018"
 output: html_document
 ---
 
-Submit a Zip file with your R Markdown file, the HTML output, and any supplementary files (e.g. data, figures, etc.). 
-
 ```{r  global_options, include=FALSE}
 knitr::opts_chunk$set(echo=FALSE, eval=TRUE, warning=FALSE, message=FALSE)
 ```
 
 ## Part 1 - Introduction
 
-Breast cancer is one of the most dreaded and deadly cancer diagnosis that woman can receive. For women in the U.S., breast cancer death rates are higher than those for any other cancer, besides lung cancer. Many institutions have dedicated years of research into improving the survival chances of breast cancer patients and there has been a measure of improvement in the new incidence rates since 2000. Treatment advances, earlier detection through screening, and increased awareness are all key factors in surviving breast cancer and the emergence of machine learning in medical research is an important step in detecting and predicting malignant tumors.
+Breast cancer is one of the most dreaded and deadly cancer diagnosis that a woman can receive. For women in the U.S., breast cancer death rates are higher than those for any other cancer, besides lung cancer. Many institutions have dedicated years of research into improving the survival chances of breast cancer patients and there has been a measure of improvement in the new incidence rates since 2000. Treatment advances, earlier detection through screening, and increased awareness are all key factors in surviving breast cancer and the emergence of machine learning in medical research is an important step in detecting and predicting malignant tumors.
 
 Each year it is estimated that over 252,710 US women will be diagnosed with breast cancer. About 1 in 8 US women will develop invasive breast cancer over the course of her lifetime. Invasive cancer, or Stage-4 breast cancer, is also called metastatic breast cancer. Metastasis happens when cancer cells migrate from the breast elsewhere in the body, triggering cancerous growth and is terminal meaning there is no cure. More than 40,000 US women a year die from metastatic breast cancer and that number has not changed since 1970. Research enabling earlier detection of malignancy is imperative to the survival of women diagnosed with breast cancer.
 
@@ -37,22 +35,29 @@ library(dplyr)
 library(glmulti)
 library(rJava)
 
-bc_data <- read.csv("wisc_bc_data.csv")
+bc_data_all <- read.csv("wisc_bc_data.csv")
+###########################
+## 85% of the sample size
+smp_size <- floor(0.85 * nrow(bc_data_all))
 
-#create bucket variable for radius mean which is either top half or bottom half
-bc_data <- bc_data %>% 
-    mutate(radius_mean_size = ifelse(radius_mean < 19.7,"bottom half", "top half") )
+## set the seed to make your partition reproducible
+set.seed(42)
+train_ind <- sample(seq_len(nrow(bc_data_all)), size = smp_size)
 
+bc_data <- bc_data_all[train_ind, ]
+bc_data_test <- bc_data_all[-train_ind, ]
+
+#look at the structure of the data
 str(bc_data)
 ``` 
 
 ###Data collection: 
 
-The features in this dataset characterise cell nucleus properties and were generated from image analysis of fine needle aspirates (FNA) of breast masses. They describe characteristics of the cell nuclei present in the image. Dr. William H. Wolberg collected samples from `r nrow(bc_data)` patients with solid breast masses and computed values for each of ten characteristics of each nuclei, measuring size, shape and texture including the mean, standard error and extreme values of these features.
+The features in this dataset characterise cell nucleus properties and were generated from image analysis of fine needle aspirates (FNA) of breast masses. They describe characteristics of the cell nuclei present in the image. Dr. William H. Wolberg collected samples from `r nrow(bc_data_all)` patients with solid breast masses and computed values for each of ten characteristics of each nuclei, measuring size, shape and texture including the mean, standard error and extreme values of these features.
 
 ###Cases: 
 
-Each case represents an individual sample or observation of tissue taken from a biopsy of a breast mass. There `r nrow(bc_data)` observations in the given dataset. 
+Each case represents an individual sample or observation of tissue taken from a biopsy of a breast mass. There `r nrow(bc_data_all)` observations in the given dataset. 
 
 ###Variables: 
 
@@ -62,7 +67,7 @@ The response variable is the diagnosis which is a qualitative binary categorical
 
 ####Independent Variables
 
-There are 30 independent variables which are quantitative and an additional variable conputed from radius_mean called radius_mean_size is a qualitative variable that describes the size of the mass as being in the bottom half or top half of the size range. The variables are all aspects of the tissue samples and include the mean, standard error and worst case for each variable.
+There are 30 independent variables which are quantitative. The variables are all aspects of the tissue samples and include the mean, standard error and worst case for each variable.
 
 Ten real-valued features are computed for each cell nucleus: 
 
@@ -79,18 +84,22 @@ j) fractal dimension ("coastline approximation" - 1)
 
 All feature values are recoded with four significant digits. There are no missing data.
 
-THe class distribution of the data are 357 benign and 212 malignant observations. 
+The class distribution of the data are 357 benign and 212 malignant observations. 
 
 ###Type of study: 
-What is the type of study, observational or an experiment? Explain how you’ve arrived at your conclusion using information on the sampling and/or experimental design.
 
-This study is an observational study of the biopsied breast tissue mass. The sample were taken as a result of mass detection and not as a part of an experimental study. They were collected as part of a medicial procedure conducted to examine the breast mass tissue in an attempt to diagnos the mass as benign or malignant.
+This study is an observational study of the biopsied breast tissue mass. The samples were taken as a result of mass detection and not as a part of an experimental study. They were collected as part of a medicial procedure conducted to examine the breast mass tissue in an attempt to diagnos the mass as benign or malignant. The samples are independent of each other. 
 
 ###Scope of inference - generalizability: 
-Identify the population of interest, and whether the findings from this analysis can be generalized to that population, or, if not, a subsection of that population. Explain why or why not. Also discuss any potential sources of bias that might prevent generalizability.
+
+The population of interest are people who have detected breast mass and receive treatment for diagnosis. The study is a cross-sectional study (also known as a cross-sectional analysis, transverse study, prevalence study) which is a type of observational study that analyzes data from a population, or a representative subset, at a specific point in time—that is, cross-sectional data. 
+
+A cross-sectional study should be representative of the population if generalizations from the findings are to have any validity. The sample size should be sufficiently large enough to estimate the prevalence of the conditions of interest with adequate precision. 
+
+Non-response, or lack of voluntary subject participation, is a particular problem affecting cross-sectional studies and can result in bias of the measures of outcome. This is a particular problem when the characteristics of non-responders differ from responders.
 
 ###Scope of inference - causality: 
-Can these data be used to establish causal links between the variables of interest? Explain why or why not.
+No, these data be used to establish causal links between the variables of interest because of the type of study, but the findings can be used to describe the cause of the disease within the population.
 
 ## Part 3 - Exploratory Data Analysis
 
@@ -102,47 +111,49 @@ summary(bc_data)
 
 describe(bc_data %>% select(-id, -diagnosis))
 #how many benign and malignant observations
-table(bc_data$diagnosis)
+#table(bc_data$diagnosis)
 ```
 
-There are no missing values.
-
-Boxplots of the 10 mean variables vs. diagnosis:
+####Boxplots of the 30 Variables vs. Diagnosis:
 
 ```{r plots}
+bc_data_tall <- bc_data %>% select(-id) %>%
+ gather("measurement", "value", -diagnosis)
+ 
 
-boxplot(radius_mean ~ diagnosis, data = bc_data)
-boxplot(texture_mean ~ diagnosis, data = bc_data)
-boxplot(perimeter_mean ~ diagnosis, data = bc_data)
-boxplot(area_mean ~ diagnosis, data = bc_data)
-boxplot(smoothness_mean ~ diagnosis, data = bc_data)
-boxplot(compactness_mean ~ diagnosis, data = bc_data)
-boxplot(concavity_mean ~ diagnosis, data = bc_data)
-boxplot(concave_points_mean ~ diagnosis, data = bc_data)
-boxplot(symmetry_mean ~ diagnosis, data = bc_data)
-boxplot(fractal_dimension_mean ~ diagnosis, data = bc_data)
+bc_data_tall %>% ggplot(aes(diagnosis, value, color=diagnosis)) +
+ geom_boxplot() +
+ facet_wrap(~measurement, scales="free_y") +
+ theme_minimal() +
+ scale_color_manual(labels = c("Begnign", "Malignant"), values = c("blue", "red"))
+
 ```
 
-
-###Model Probability
-
-
+There are no missing values. For some variables, there are clear differences between the distributions of the malignant and benign. There are no obvious outliers.
 
 ## Part 4 - Inference
 
-Logistic Regression is used for modeling when there is a categorical response variable with two levels. Logistic regression is a Generalized Linear Model 
+Logistic Regression is used for modeling when there is a categorical response variable with two levels or in other words when the dependent variable is binary.  Like all regression analyses, the logistic regression is a predictive analysis.  Logistic regression is used to describe data and to explain the relationship between one dependent binary variable and one or more nominal, ordinal, interval or ratio-level independent variables.
+Logistic regression is a type of Generalized Linear Model.
 
-###Check conditions
+####Check Conditions 
 
 Conditions for Logistic Regression:
 
- - Each predictor is linearly related to the logut(pi) if all other predictors are held constant.
+ - Each predictor is linearly related to the logit(pi) if all other predictors are held constant.
+See below for linearity test.
  - Each outcome Yi is independent of the other outcomes.
+The samples are all taken independently of each other and therefore the data are independent.
 
-###Theoretical inference - 
+
+###Theoretical Inference - 
+
 ####Hypothesis Test and Confidence Intervals
 
-H0 = All variables (individually or in combination) are good predictors for benign or malignant diagnosis.
+Our null hypothesis is that none of the variables are good predictors for the diagnosis. The alternate hypothesis is that there are specific variables or a combination of variables that are good predictors for the diagnosis. We can write our hypothesis in equation form:
+
+H0 = No variables (individually or in combination) are good predictors for benign or malignant diagnosis.
+
 H1 = There is a specific variable or combination of variables which are good predictors for benign or malignant diagnosis.
 
 
@@ -157,10 +168,12 @@ bc_mode.step <- stepAIC(bc_model_AIC, direction = "both")
 bc_mode.step$anova
 ```
 
-###GLM for all variables
+###GLM for all Variables
 
 Generalized linear models (GLMs) are an extension of linear models to model non-normal response variables.
 Logistic regression is for binary response variables, where there are two possible outcomes.
+
+####Plot of the residuals for the GLM Model with all Variables
 
 ```{r glm all}
 plot(bc_mode.step)
@@ -169,9 +182,7 @@ summary(bc_mode.step)
 plot(residuals(bc_mode.step))
 ```
 
-take genetic model and look at each variable selected for high sd and high p-value - run several times selecting out the best variables from the resulting models, select out those variables and then rerun in regular or best glm (hopefully a certain set will tend to show everytime you run the model)
-
-2^30 ways to do different possible model combinations, computationally infeasible, must do model selection taking into account the high correlation between variables, which means there are lots of combinations that would make good models
+We can see in this plot of the deviation residuals that the model with all variables is too good of a fit and is possibly overfitting the data.
 
 
 ```{r AIC compare, include=FALSE}
@@ -329,67 +340,72 @@ summary(bc_model_step30)
 
 The deviance residual is useful for determining if individual points are not well fit by the model. The deviance residual for the ith observation is the signed square root of the contribution of the ith case to the sum for the model deviance, DEV .
 
-In standard linear models, we estimate the parameters by minimizing the sum of the squared residuals.
-Equivalent to finding parameters that maximize the likelihood. In a GLM we also fit parameters by maximizing the likelihood. Estimation is equivalent to finding parameter values that minimize the deviance.
+In standard linear models, we estimate the parameters by minimizing the sum of the squared residuals, equivalent to finding parameters that maximize the likelihood. In a GLM we also fit parameters by maximizing the likelihood and is equivalent to finding parameter values that minimize the deviance.
 
 ```{r step_model plots}
-plot(residuals(bc_model_step1))
-plot(residuals(bc_model_step2))
-plot(residuals(bc_model_step3))
-plot(residuals(bc_model_step4))
-plot(residuals(bc_model_step5))
-plot(residuals(bc_model_step6))
-plot(residuals(bc_model_step7))
-plot(residuals(bc_model_step8))
-plot(residuals(bc_model_step9))
-plot(residuals(bc_model_step10))
-plot(residuals(bc_model_step11))
-plot(residuals(bc_model_step12))
-plot(residuals(bc_model_step13))
-plot(residuals(bc_model_step14))
-plot(residuals(bc_model_step15))
-plot(residuals(bc_model_step16))
-plot(residuals(bc_model_step17))
-plot(residuals(bc_model_step18))
-plot(residuals(bc_model_step19))
-plot(residuals(bc_model_step20))
-plot(residuals(bc_model_step21))
-plot(residuals(bc_model_step22))
-plot(residuals(bc_model_step23))
-plot(residuals(bc_model_step24))
-plot(residuals(bc_model_step25))
-plot(residuals(bc_model_step26))
-plot(residuals(bc_model_step27))
-plot(residuals(bc_model_step28))
-plot(residuals(bc_model_step29))
-plot(residuals(bc_model_step30))
+#par(mfrow=c(5,6))
+plot(residuals(bc_model_step1), main="radius_mean")
+plot(residuals(bc_model_step2), main="texture_mean")
+plot(residuals(bc_model_step3), main="perimeter_mean")
+plot(residuals(bc_model_step4), main="area_mean")
+plot(residuals(bc_model_step5), main="smoothness_mean")
+plot(residuals(bc_model_step6), main="compactness_mean")
+plot(residuals(bc_model_step7), main="concavity_mean")
+plot(residuals(bc_model_step8), main="concave_points_mean")
+plot(residuals(bc_model_step9), main="symmetry_mean")
+plot(residuals(bc_model_step10), main="fractal_dimension_mean")
+plot(residuals(bc_model_step11), main="radius_se")
+plot(residuals(bc_model_step12), main="texture_se")
+plot(residuals(bc_model_step13), main="perimeter_se")
+plot(residuals(bc_model_step14), main="area_se")
+plot(residuals(bc_model_step15), main="smoothness_se")
+plot(residuals(bc_model_step16), main="compactness_se")
+plot(residuals(bc_model_step17), main="concavity_se")
+plot(residuals(bc_model_step18), main="concave_points_se")
+plot(residuals(bc_model_step19), main="symmetry_se")
+plot(residuals(bc_model_step20), main="fractal_dimension_se")
+plot(residuals(bc_model_step21), main="radius_worst")
+plot(residuals(bc_model_step22), main="texture_worst")
+plot(residuals(bc_model_step23), main="perimeter_worst")
+plot(residuals(bc_model_step24), main="area_worst")
+plot(residuals(bc_model_step25), main="smoothness_worst")
+plot(residuals(bc_model_step26), main="compactness_worst")
+plot(residuals(bc_model_step27), main="concavity_worst")
+plot(residuals(bc_model_step28), main="concave_points_worst")
+plot(residuals(bc_model_step29), main="symmetry_worst")
+plot(residuals(bc_model_step30), main="fractal_dimension_worst")
+#par(mfrow=c(1,1))
 ```
 
 ###Methods for Selecting Variables
+
+In order to examine all possible models for these variables, we would have to creat 2^30 different  model combinations which is computationally infeasible. Insteas we must choose a method for model selection taking into account the high correlation between variables.
 
 ###Examine the Correlation of the Variables 
 
 Often we have variables that are highly correlated and therefore redundant. By eliminating highly correlated features we can avoid a predictive bias for the information contained in these features. 
 
-```{R cor}
+```{r cor}
 corMatMy <- cor(bc_data[,3:32])
 corrplot(corMatMy, order = "hclust", tl.cex = 0.7)
 ```
 
-Correlations between all features are calculated and visualised with the corrplot package. ##I will consider removing all features with a correlation higher than 0.7, keeping the feature with the lower mean.##
+```{r highcor, include=FALSE}
+highlyCor <- colnames(bc_data[,3:32])[findCorrelation(corMatMy, cutoff = 0.7, verbose = TRUE)]
+```
+
+#####These are the variables that are highly correlated:
+
+```{r print cor vars}
+highlyCor
+```
+
+Correlations between all features are calculated and visualised with the corrplot package. We could consider removing all features with a correlation higher than 0.7 as a means of variable selection. But for now let's explore other options for variable selection.
 
 
 ####AIC - Akaike Information Criterion
 
-Akaike information criterion (AIC) (Akaike, 1974) is a fined technique based on in-sample fit to estimate the likelihood of a model to predict/estimate the future values.
-
-A good model is the one that has minimum AIC among all the other models. The AIC can be used to select between the additive and multiplicative Holt-Winters models.
-
-Bayesian information criterion (BIC) (Stone, 1979) is another criteria for model selection that measures the trade-off between model fit and complexity of the model. A lower AIC or BIC value indicates a better fit.
-
-The Akaike information criterion (AIC) is an estimator of the relative quality of statistical models for a given set of data. Given a collection of models for the data, AIC estimates the quality of each model, relative to each of the other models. Thus, AIC provides a means for model selection.
-
-AIC is an estimate of a constant plus the relative distance between the unknown true likelihood function of the data and the fitted likelihood function of the model, so that a lower AIC means a model is considered to be closer to the truth.
+Akaike information criterion (AIC) is a fined technique based on in-sample fit to estimate the likelihood of a model to predict/estimate the future values. A good model is the one that has minimum AIC among all the other models. Bayesian information criterion (BIC) is another criteria for model selection that measures the trade-off between model fit and complexity of the model. A lower AIC or BIC value indicates a better fit. Given a collection of models for the data, AIC estimates the quality of each model, relative to each of the other models. Thus, AIC provides a means for model selection.
 
 AIC basic principles:
 
@@ -412,7 +428,9 @@ lowest AIC, that isn’t truly the most appropriate model.
 perform similarly to each other. So you have similar evidence
 weights for different alternate hypotheses. 
 
-###Table of AIC for All Variables Modeled Independently against Diagnosis 
+Let's take a look at AIC for each variable modeled independently against diagnosis.
+
+####Table of AIC for All Variables Modeled Independently against Diagnosis 
 
                  Variable    |      AIC
     ------------------------ | ----------------------
@@ -460,6 +478,11 @@ Using a genetic algorith to select the variables which best predict a benign or 
 bc_data_no_id <- bc_data %>% select(-id) %>%
   mutate(diagnosis_b=ifelse(diagnosis=="B",0,1)) %>%
   select(-diagnosis)
+
+bc_data_test <- bc_data_test %>% select(-id) %>%
+ mutate(diagnosis_b=ifelse(diagnosis=="B",0,1)) %>%
+ select(-diagnosis)
+
 #model with predictors selected after many models examined to find the consistently chosen by stepwise AIC
 glmulti.logistic.out <-
  glmulti(diagnosis_b ~ radius_mean + perimeter_mean + compactness_mean + concavity_mean + 
@@ -477,7 +500,10 @@ glmulti.logistic.out <-
           includeobjects = T )
 ```
 
+Using a genetic algorithm, multiple models were computed to select the variables which most often appeared in the models generated. I chose the 15 variables which repeatedly were selected by the algorithm to create the final model below.
+
 ###Summary and Plots of Final Model Selected
+
 ```{r plots of final model}
 
 ## Show 5 best models (Use @ instead of $ for an S4 object)
@@ -491,13 +517,78 @@ print(glmulti.logistic.out)
 plot(residuals(glmulti.logistic.out@objects[[1]]))
 ```
 
+###Linearity Assumption Check
+
+```{r linearity assumption check}
+predictors <- c("perimeter_mean","compactness_mean","concavity_mean", 
+    "symmetry_mean","area_se","concave_points_se","concavity_se",
+    "fractal_dimension_se","texture_worst","area_worst","symmetry_worst",
+    "fractal_dimension_worst")
+probabilities <- predict.glm(glmulti.logistic.out@objects[[1]], type="response")
+predicted.classes <- ifelse(probabilities <= 0.5, 0, 1)
+# bind the logit and tidy the data
+bc_data_logits <- bc_data %>%
+    select(-id, -diagnosis) %>%
+    select(predictors) %>%
+    mutate(logit = log(probabilities/(1-probabilities))) %>%
+    gather(key="predictor", value="predictor.value", -logit)
+
+ggplot(bc_data_logits, aes(logit, predictor.value)) +
+    geom_point(size=0.5, alpha=0.5) +
+    geom_smooth(method="loess") +
+    theme_minimal() +
+    facet_wrap(~predictor, scales="free_y")
+```
+
+We can see that the variables are all linearly related to the logit(pi) if all other predictors are held constant this meeting the first condition for linear regression.
+
+###Model Probability
+
+```{r model prob}
+### predictor probabilities for final model validation on the test set
+predictions <- predict.glm(glmulti.logistic.out@objects[[1]], newdata=bc_data_test, type="response")
+xtab <- table( ifelse(predictions <= 0.5, 0, 1), bc_data_test$diagnosis_b)
+caret::confusionMatrix(xtab)
+
+```
+
+Final test of model validation is done by making predictions on a sample of data
+not used in the model building work; this is the hold-out or test set.  The model
+is used to predict probabilities of the hold-outs observations being malignant.  A threshold
+is chosen where probabilities above 0.5 are classified as malignant and benign otherwise.
+These predicted classifications are compared against actuals value using a confusion matrix
+and several measures of model performance, such as sensitivity (proportion of actual
+positives that are correctly identified) and specificity (propotion of actual negatives
+that are correctly identified).
+
+###Hypothesis Test 
+
+For our final model validation we conclude the hypothesis test by calculating the output and the p-value comparing the full model to the null model.
+
+```{r hypothesis test}
+nmod <- glm(diagnosis_b~1, family="binomial", data=bc_data_no_id)
+anova(nmod, glmulti.logistic.out@objects[[1]], test="Chisq")
+```
+
+We can see that the probability is nearly zero and we therefore reject the null hypothesis.
 
 ###Brief description of methodology that reflects your conceptual understanding
 
+- Identified and collected a dataset to perform analysis
+- Split the data into model build and hold-out (i.e., test) sets.  
+- Retain the test set as a final check on model performance.
+- Exploratory analysis
+- Identify independent (predictor) variable correlations
+- Perform model selection using univariate predictor selection
+- Perform model selection using stepwise predictor selection
+- Perform model selection using genetic algorithms, a heuristic approach to model selection
+- Compare multiple model selection approaches, synthesizing a single model from all prior approaches
+- Validate model compared to null model (hypothesis)
+- Check final model performance on hold-out data set
+
 ## Part 5 - Conclusion
 
-Write a brief summary of your findings without repeating your statements from earlier. Also include a discussion of what you have learned about your research question and the data you collected. You may also want to include ideas for possible future research.
-
+In rejecting the null hypothesis, we found that a combination of variables predicted the diagnosis to within 96.5% accuracy. We also found that many of the variables are highly correlated, making variable selection important. A lack of domain knowledge made feature selection more difficult as well. I also learned that modeling with 30 variables is more challenging than expected.
 
 ### References
 
