@@ -5,10 +5,10 @@ date: "12/12/2018"
 output: html_document
 ---
 
-The final report should be presented in more formal format. Consider your audience to be non data analysts. Fellow data analysts (i.e. students) will be able to access your R Markdown file for details on the analysis. Submit a Zip file with your R Markdown file, the HTML output, and any supplementary files (e.g. data, figures, etc.). You must address the five following sections:
+Submit a Zip file with your R Markdown file, the HTML output, and any supplementary files (e.g. data, figures, etc.). 
 
 ```{r  global_options, include=FALSE}
-knitr::opts_chunk$set(echo=TRUE, eval=TRUE, warning=FALSE, message=FALSE)
+knitr::opts_chunk$set(echo=FALSE, eval=TRUE, warning=FALSE, message=FALSE)
 ```
 
 ## Part 1 - Introduction
@@ -23,9 +23,19 @@ Using this dataset we can examine the observations of the biospies and investiga
 
 ## Part 2 - Data
 
-```{r data, include=TRUE}
-library(tidyverse)
+```{r data, include=FALSE}
+library(MASS)
 library(psych)
+library(ggplot2)
+library(corrplot)
+library(bestglm)
+library(caret)
+library(rsq)
+library(tidyverse)
+library(dplyr)
+# docs at https://cran.r-project.org/web/packages/glmulti/glmulti.pdf
+library(glmulti)
+library(rJava)
 
 bc_data <- read.csv("wisc_bc_data.csv")
 
@@ -36,19 +46,15 @@ bc_data <- bc_data %>%
 str(bc_data)
 ``` 
 
-Write about the data from your proposal in text form. Address the following points:
-
 ###Data collection: 
-Describe how the data were collected.
 
-"Features are computed from a digitized image of a fine needle aspirate (FNA) of a breast mass. They describe characteristics of the cell nuclei present in the image."
+The features in this dataset characterise cell nucleus properties and were generated from image analysis of fine needle aspirates (FNA) of breast masses. They describe characteristics of the cell nuclei present in the image. Dr. William H. Wolberg collected samples from `r nrow(bc_data)` patients with solid breast masses and computed values for each of ten characteristics of each nuclei, measuring size, shape and texture including the mean, standard error and extreme values of these features.
 
 ###Cases: 
 
-Each case represents an individual sample or observation of tissue taken from a biopsy of a breast mass. There `r nrow(bc_data)` observations in the given data set. 
+Each case represents an individual sample or observation of tissue taken from a biopsy of a breast mass. There `r nrow(bc_data)` observations in the given dataset. 
 
 ###Variables: 
-What are the two variables you will be studying? State the type of each variable.
 
 ####Dependent Variable
 
@@ -71,17 +77,14 @@ h) concave points (number of concave portions of the contour)
 i) symmetry 
 j) fractal dimension ("coastline approximation" - 1)
 
-All feature values are recoded with four significant digits.
+All feature values are recoded with four significant digits. There are no missing data.
 
-Missing attribute values: none
-
-Class distribution: 357 benign, 212 malignant
-
+THe class distribution of the data are 357 benign and 212 malignant observations. 
 
 ###Type of study: 
 What is the type of study, observational or an experiment? Explain how you’ve arrived at your conclusion using information on the sampling and/or experimental design.
 
-This study is an observational study of the biopsied breast tissue mass.
+This study is an observational study of the biopsied breast tissue mass. The sample were taken as a result of mass detection and not as a part of an experimental study. They were collected as part of a medicial procedure conducted to examine the breast mass tissue in an attempt to diagnos the mass as benign or malignant.
 
 ###Scope of inference - generalizability: 
 Identify the population of interest, and whether the findings from this analysis can be generalized to that population, or, if not, a subsection of that population. Explain why or why not. Also discuss any potential sources of bias that might prevent generalizability.
@@ -93,7 +96,7 @@ Can these data be used to establish causal links between the variables of intere
 
 Perform relevant descriptive statistics, including summary statistics and visualization of the data. Also address what the exploratory data analysis suggests about your research question.
 
-```{r summary, include=TRUE}
+```{r summary, include=FALSE}
 #check for missing values and summary statistics
 summary(bc_data)
 
@@ -107,6 +110,7 @@ There are no missing values.
 Boxplots of the 10 mean variables vs. diagnosis:
 
 ```{r plots}
+
 boxplot(radius_mean ~ diagnosis, data = bc_data)
 boxplot(texture_mean ~ diagnosis, data = bc_data)
 boxplot(perimeter_mean ~ diagnosis, data = bc_data)
@@ -114,41 +118,379 @@ boxplot(area_mean ~ diagnosis, data = bc_data)
 boxplot(smoothness_mean ~ diagnosis, data = bc_data)
 boxplot(compactness_mean ~ diagnosis, data = bc_data)
 boxplot(concavity_mean ~ diagnosis, data = bc_data)
-boxplot(concave.points_mean ~ diagnosis, data = bc_data)
+boxplot(concave_points_mean ~ diagnosis, data = bc_data)
 boxplot(symmetry_mean ~ diagnosis, data = bc_data)
 boxplot(fractal_dimension_mean ~ diagnosis, data = bc_data)
 ```
- 
+
+
+###Model Probability
+
+
 
 ## Part 4 - Inference
 
-If your data fails some conditions and you can’t use a theoretical method, then you should use simulation. If you can use both methods, then you should use both methods. It is your responsibility to figure out the appropriate methodology.
+Logistic Regression is used for modeling when there is a categorical response variable with two levels. Logistic regression is a Generalized Linear Model 
 
 ###Check conditions
 
-Conditions for Regression:
+Conditions for Logistic Regression:
 
- - The residuals of the model are nearly normal  
- - The variability of the residuals is nearly constant 
- - The residuals are independent 
- - Each variable is linearly related to the outcome 
+ - Each predictor is linearly related to the logut(pi) if all other predictors are held constant.
+ - Each outcome Yi is independent of the other outcomes.
 
-###Theoretical inference (if possible) - 
-hypothesis test and confidence interval
+###Theoretical inference - 
+####Hypothesis Test and Confidence Intervals
 
-```{r lm}
-bc_model <- lm()
+H0 = All variables (individually or in combination) are good predictors for benign or malignant diagnosis.
+H1 = There is a specific variable or combination of variables which are good predictors for benign or malignant diagnosis.
 
-# Assessing Outliers
-outlierTest(bc_model)
-#qq plot for studentized resid 
-qqPlot(fit, main="QQ Plot")
-# leverage plots
-leveragePlots(fit) 
+
+```{r glm,include=FALSE}
+
+bc_data_no_id <- bc_data %>% select(-id)
+#this model doesn't do a great job of eliminating variables, 24 left, but has a good AIC
+bc_model_AIC <- glm(diagnosis ~ ., data = bc_data_no_id, 
+                family=binomial, control = list(maxit = 100))
+
+bc_mode.step <- stepAIC(bc_model_AIC, direction = "both")
+bc_mode.step$anova
 ```
 
-###Simulation based inference - 
-hypothesis test and confidence interval
+###GLM for all variables
+
+Generalized linear models (GLMs) are an extension of linear models to model non-normal response variables.
+Logistic regression is for binary response variables, where there are two possible outcomes.
+
+```{r glm all}
+plot(bc_mode.step)
+summary(bc_mode.step)
+#plot the deviance residuals of the step glm model
+plot(residuals(bc_mode.step))
+```
+
+take genetic model and look at each variable selected for high sd and high p-value - run several times selecting out the best variables from the resulting models, select out those variables and then rerun in regular or best glm (hopefully a certain set will tend to show everytime you run the model)
+
+2^30 ways to do different possible model combinations, computationally infeasible, must do model selection taking into account the high correlation between variables, which means there are lots of combinations that would make good models
+
+
+```{r AIC compare, include=FALSE}
+bc_model_step1 <- glm(diagnosis ~ radius_mean,
+                      data = bc_data, family=binomial(link="logit"),
+                      control = list(maxit = 50))
+summary(bc_model_step1)
+
+bc_model_step2 <- glm(diagnosis ~ texture_mean,
+                      data = bc_data, family=binomial(link="logit"),
+                      control = list(maxit = 50))
+summary(bc_model_step2) 
+
+bc_model_step3 <- glm(diagnosis ~ perimeter_mean,
+                      data = bc_data, family=binomial(link="logit"),
+                      control = list(maxit = 50))
+summary(bc_model_step3) 
+
+bc_model_step4 <- glm(diagnosis ~ area_mean,
+                      data = bc_data, family=binomial(link="logit"),
+                      control = list(maxit = 50))
+summary(bc_model_step4) 
+
+bc_model_step5 <- glm(diagnosis ~ smoothness_mean,
+                      data = bc_data, family=binomial(link="logit"),
+                      control = list(maxit = 50))
+summary(bc_model_step5) 
+
+bc_model_step6 <- glm(diagnosis ~ compactness_mean,
+                      data = bc_data, family=binomial(link="logit"),
+                      control = list(maxit = 50))
+summary(bc_model_step6) 
+
+bc_model_step7 <- glm(diagnosis ~ concavity_mean,
+                      data = bc_data, family=binomial(link="logit"),
+                      control = list(maxit = 50))
+summary(bc_model_step7) 
+
+bc_model_step8 <- glm(diagnosis ~ concave_points_mean,
+                      data = bc_data, family=binomial(link="logit"),
+                      control = list(maxit = 50))
+summary(bc_model_step8) 
+
+bc_model_step9 <- glm(diagnosis ~ symmetry_mean,
+                      data = bc_data, family=binomial(link="logit"),
+                      control = list(maxit = 50))
+summary(bc_model_step9) 
+
+bc_model_step10 <- glm(diagnosis ~ fractal_dimension_mean,
+                      data = bc_data, family=binomial(link="logit"),
+                      control = list(maxit = 50))
+summary(bc_model_step10) 
+
+bc_model_step11 <- glm(diagnosis ~ radius_se,
+                       data = bc_data, family=binomial(link="logit"),
+                       control = list(maxit = 50))
+summary(bc_model_step11) 
+
+bc_model_step12 <- glm(diagnosis ~ texture_se,
+                       data = bc_data, family=binomial(link="logit"),
+                       control = list(maxit = 50))
+summary(bc_model_step12) 
+
+bc_model_step13 <- glm(diagnosis ~ perimeter_se,
+                       data = bc_data, family=binomial(link="logit"),
+                       control = list(maxit = 50))
+summary(bc_model_step13) 
+
+bc_model_step14 <- glm(diagnosis ~ area_se,
+                       data = bc_data, family=binomial(link="logit"),
+                       control = list(maxit = 50))
+summary(bc_model_step14) 
+
+bc_model_step15 <- glm(diagnosis ~ smoothness_se,
+                       data = bc_data, family=binomial(link="logit"),
+                       control = list(maxit = 50))
+summary(bc_model_step15) 
+
+bc_model_step16 <- glm(diagnosis ~ compactness_se,
+                       data = bc_data, family=binomial(link="logit"),
+                       control = list(maxit = 50))
+summary(bc_model_step16) 
+
+bc_model_step17 <- glm(diagnosis ~ concavity_se,
+                       data = bc_data, family=binomial(link="logit"),
+                       control = list(maxit = 50))
+summary(bc_model_step17) 
+
+bc_model_step18 <- glm(diagnosis ~ concave_points_se,
+                       data = bc_data, family=binomial(link="logit"),
+                       control = list(maxit = 50))
+summary(bc_model_step18) 
+
+bc_model_step19 <- glm(diagnosis ~ symmetry_se,
+                       data = bc_data, family=binomial(link="logit"),
+                       control = list(maxit = 50))
+summary(bc_model_step19) 
+
+bc_model_step20 <- glm(diagnosis ~ fractal_dimension_se,
+                       data = bc_data, family=binomial(link="logit"),
+                       control = list(maxit = 50))
+summary(bc_model_step20) 
+
+bc_model_step21 <- glm(diagnosis ~ radius_worst,
+                       data = bc_data, family=binomial(link="logit"),
+                       control = list(maxit = 50))
+summary(bc_model_step21) 
+
+bc_model_step22 <- glm(diagnosis ~ texture_worst,
+                       data = bc_data, family=binomial(link="logit"),
+                       control = list(maxit = 50))
+summary(bc_model_step22) 
+
+bc_model_step23 <- glm(diagnosis ~ perimeter_worst,
+                       data = bc_data, family=binomial(link="logit"),
+                       control = list(maxit = 50))
+summary(bc_model_step23) 
+
+bc_model_step24 <- glm(diagnosis ~ area_worst,
+                       data = bc_data, family=binomial(link="logit"),
+                       control = list(maxit = 50))
+summary(bc_model_step24) 
+
+bc_model_step25 <- glm(diagnosis ~ smoothness_worst,
+                       data = bc_data, family=binomial(link="logit"),
+                       control = list(maxit = 50))
+summary(bc_model_step25) 
+
+bc_model_step26 <- glm(diagnosis ~ compactness_worst,
+                       data = bc_data, family=binomial(link="logit"),
+control = list(maxit = 50))
+
+bc_model_step27 <- glm(diagnosis ~ concavity_worst,
+                       data = bc_data, family=binomial(link="logit"),
+                       control = list(maxit = 50))
+summary(bc_model_step27) 
+
+bc_model_step28 <- glm(diagnosis ~ concave_points_worst,
+                       data = bc_data, family=binomial(link="logit"),
+                       control = list(maxit = 50))
+summary(bc_model_step28)
+
+bc_model_step29 <- glm(diagnosis ~ symmetry_worst,
+                       data = bc_data, family=binomial(link="logit"),
+                       control = list(maxit = 50))
+summary(bc_model_step29) 
+
+bc_model_step30 <- glm(diagnosis ~ fractal_dimension_worst,
+                       data = bc_data, family=binomial(link="logit"),
+                       control = list(maxit = 50))
+summary(bc_model_step30) 
+```
+
+###Deviance Residual Plots for all Variables Modeled Independently Against Diagnosis 
+
+The deviance residual is useful for determining if individual points are not well fit by the model. The deviance residual for the ith observation is the signed square root of the contribution of the ith case to the sum for the model deviance, DEV .
+
+In standard linear models, we estimate the parameters by minimizing the sum of the squared residuals.
+Equivalent to finding parameters that maximize the likelihood. In a GLM we also fit parameters by maximizing the likelihood. Estimation is equivalent to finding parameter values that minimize the deviance.
+
+```{r step_model plots}
+plot(residuals(bc_model_step1))
+plot(residuals(bc_model_step2))
+plot(residuals(bc_model_step3))
+plot(residuals(bc_model_step4))
+plot(residuals(bc_model_step5))
+plot(residuals(bc_model_step6))
+plot(residuals(bc_model_step7))
+plot(residuals(bc_model_step8))
+plot(residuals(bc_model_step9))
+plot(residuals(bc_model_step10))
+plot(residuals(bc_model_step11))
+plot(residuals(bc_model_step12))
+plot(residuals(bc_model_step13))
+plot(residuals(bc_model_step14))
+plot(residuals(bc_model_step15))
+plot(residuals(bc_model_step16))
+plot(residuals(bc_model_step17))
+plot(residuals(bc_model_step18))
+plot(residuals(bc_model_step19))
+plot(residuals(bc_model_step20))
+plot(residuals(bc_model_step21))
+plot(residuals(bc_model_step22))
+plot(residuals(bc_model_step23))
+plot(residuals(bc_model_step24))
+plot(residuals(bc_model_step25))
+plot(residuals(bc_model_step26))
+plot(residuals(bc_model_step27))
+plot(residuals(bc_model_step28))
+plot(residuals(bc_model_step29))
+plot(residuals(bc_model_step30))
+```
+
+###Methods for Selecting Variables
+
+###Examine the Correlation of the Variables 
+
+Often we have variables that are highly correlated and therefore redundant. By eliminating highly correlated features we can avoid a predictive bias for the information contained in these features. 
+
+```{R cor}
+corMatMy <- cor(bc_data[,3:32])
+corrplot(corMatMy, order = "hclust", tl.cex = 0.7)
+```
+
+Correlations between all features are calculated and visualised with the corrplot package. ##I will consider removing all features with a correlation higher than 0.7, keeping the feature with the lower mean.##
+
+
+####AIC - Akaike Information Criterion
+
+Akaike information criterion (AIC) (Akaike, 1974) is a fined technique based on in-sample fit to estimate the likelihood of a model to predict/estimate the future values.
+
+A good model is the one that has minimum AIC among all the other models. The AIC can be used to select between the additive and multiplicative Holt-Winters models.
+
+Bayesian information criterion (BIC) (Stone, 1979) is another criteria for model selection that measures the trade-off between model fit and complexity of the model. A lower AIC or BIC value indicates a better fit.
+
+The Akaike information criterion (AIC) is an estimator of the relative quality of statistical models for a given set of data. Given a collection of models for the data, AIC estimates the quality of each model, relative to each of the other models. Thus, AIC provides a means for model selection.
+
+AIC is an estimate of a constant plus the relative distance between the unknown true likelihood function of the data and the fitted likelihood function of the model, so that a lower AIC means a model is considered to be closer to the truth.
+
+AIC basic principles:
+
+ - Lower indicates a more parsimonious model, relative to a model fit
+with a higher AIC.
+
+ - It is a relative measure of model parsimony, so it only has
+meaning if we compare the AIC for alternate hypotheses (= different
+models of the data).
+
+ - The comparisons are only valid for models that are fit to the same response
+data (ie values of y).
+
+ - You shouldn’t compare too many models with the AIC. You will run
+into the same problems with multiple model comparison as you would
+with p-values, in that you might by chance find a model with the
+lowest AIC, that isn’t truly the most appropriate model.
+
+ - When using the AIC you might end up with multiple models that
+perform similarly to each other. So you have similar evidence
+weights for different alternate hypotheses. 
+
+###Table of AIC for All Variables Modeled Independently against Diagnosis 
+
+                 Variable    |      AIC
+    ------------------------ | ----------------------
+                 radius_mean | `r bc_model_step1$aic`
+                texture_mean | `r bc_model_step2$aic`   
+              perimeter_mean | `r bc_model_step3$aic`
+                   area_mean | `r bc_model_step4$aic`
+             smoothness_mean | `r bc_model_step5$aic`
+            compactness_mean | `r bc_model_step6$aic`
+              concavity_mean | `r bc_model_step7$aic`    
+         concave_points_mean | `r bc_model_step8$aic`
+               symmetry_mean | `r bc_model_step9$aic`
+      fractal_dimension_mean | `r bc_model_step10$aic`
+                   radius_se | `r bc_model_step11$aic`
+                  texture_se | `r bc_model_step12$aic`
+                perimeter_se | `r bc_model_step13$aic`
+                     area_se | `r bc_model_step14$aic`
+               smoothness_se | `r bc_model_step15$aic`
+              compactness_se | `r bc_model_step16$aic` 
+                concavity_se | `r bc_model_step17$aic`       
+           concave_points_se | `r bc_model_step18$aic`
+                 symmetry_se | `r bc_model_step19$aic` 
+        fractal_dimension_se | `r bc_model_step20$aic`
+                radius_worst | `r bc_model_step21$aic`
+               texture_worst | `r bc_model_step22$aic` 
+             perimeter_worst | `r bc_model_step23$aic` 
+                  area_worst | `r bc_model_step24$aic`
+            smoothness_worst | `r bc_model_step25$aic` 
+           compactness_worst | `r bc_model_step26$aic`
+             concavity_worst | `r bc_model_step27$aic`      
+        concave_points_worst | `r bc_model_step28$aic`
+              symmetry_worst | `r bc_model_step29$aic` 
+     fractal_dimension_worst | `r bc_model_step30$aic`
+                          
+
+
+### Genetic Algorithm
+
+A genetic algorithm is a search heuristic that is inspired by Charles Darwin’s theory of natural evolution. The genetic algorithm is a method for solving both constrained and unconstrained optimization problems that is based on natural selection, the process that drives biological evolution. The genetic algorithm repeatedly modifies a population of individual solutions.
+
+Using a genetic algorith to select the variables which best predict a benign or malignant outcome:
+ 
+```{r genetic glm, include=FALSE}
+#rearranging the variables for model input
+bc_data_no_id <- bc_data %>% select(-id) %>%
+  mutate(diagnosis_b=ifelse(diagnosis=="B",0,1)) %>%
+  select(-diagnosis)
+#model with predictors selected after many models examined to find the consistently chosen by stepwise AIC
+glmulti.logistic.out <-
+ glmulti(diagnosis_b ~ radius_mean + perimeter_mean + compactness_mean + concavity_mean + 
+             symmetry_mean + concave_points_mean + radius_se + area_se + concave_points_se + 
+             concavity_se + fractal_dimension_se + texture_worst + area_worst + symmetry_worst + 
+             fractal_dimension_worst, 
+            data = bc_data_no_id,
+          level = 1,               # No interaction considered
+          method = "g",            # Genetic algorithms search
+          crit = "aic",            # AIC as criteria
+          confsetsize = 20,        # Keep 20 best models
+          plotty = F, report = T,  # No plot or interim reports
+          fitfunction = "glm",     # glm function
+          family = binomial,       # binomial family for logistic regression
+          includeobjects = T )
+```
+
+###Summary and Plots of Final Model Selected
+```{r plots of final model}
+
+## Show 5 best models (Use @ instead of $ for an S4 object)
+summary(glmulti.logistic.out@objects[[1]])
+
+plot(glmulti.logistic.out, type="p")
+plot(glmulti.logistic.out, type="s")
+plot(glmulti.logistic.out, type="w")
+print(glmulti.logistic.out)
+
+plot(residuals(glmulti.logistic.out@objects[[1]]))
+```
+
 
 ###Brief description of methodology that reflects your conceptual understanding
 
@@ -180,6 +522,14 @@ street '@' cs.wisc.edu 608-262-6619
 University of Wisconsin, 1210 West Dayton St., Madison, WI 53706 
 olvi '@' cs.wisc.edu 
 
-### Appendix (optional)
+W.N. Street, W.H. Wolberg and O.L. Mangasarian. Nuclear feature extraction for breast tumor diagnosis. IS&T/SPIE 1993 International Symposium on Electronic Imaging: Science and Technology, volume 1905, pages 861-870, San Jose, CA, 1993.
 
-Remove this section if you don't have an appendix
+O.L. Mangasarian, W.N. Street and W.H. Wolberg. Breast cancer diagnosis and prognosis via linear programming. Operations Research, 43(4), pages 570-577, July-August 1995.
+
+W.H. Wolberg, W.N. Street, and O.L. Mangasarian. Machine learning techniques to diagnose breast cancer from fine-needle aspirates. Cancer Letters 77 (1994) 163-171.
+
+W.H. Wolberg, W.N. Street, and O.L. Mangasarian. Image analysis and machine learning applied to breast cancer diagnosis and prognosis. Analytical and Quantitative Cytology and Histology, Vol. 17 No. 2, pages 77-87, April 1995.
+
+W.H. Wolberg, W.N. Street, D.M. Heisey, and O.L. Mangasarian. Computerized breast cancer diagnosis and prognosis from fine needle aspirates. Archives of Surgery 1995;130:511-516.
+
+W.H. Wolberg, W.N. Street, D.M. Heisey, and O.L. Mangasarian. Computer-derived nuclear features distinguish malignant from benign breast cytology. Human Pathology, 26:792–796, 1995.
